@@ -15,32 +15,20 @@ return [
     |
     */
 
-  
-      'paths' => ['api/*'], // API routes only
- 'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', '')),
+    'allowed_methods' => ['*'],
+
+    'allowed_origins' => ['*'],
+
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => [
-        'Content-Type',
-        'X-Requested-With',
-        'Authorization',
-        'Accept',
-        'Origin',
-        'X-CSRF-TOKEN',
-    ],
+    'allowed_headers' => ['*'],
 
-    'exposed_headers' => [
-        'Authorization',
-        'Content-Type',
-        'X-Requested-With',
-    ],
+    'exposed_headers' => [],
 
-    'max_age' => 3600,
+    'max_age' => 0,
 
- 
-    'supports_credentials' => env('CORS_SUPPORTS_CREDENTIALS', false), // false by default, set to true if you need to support cookies or HTTP authentication
+    'supports_credentials' => false,
 
 ];
-

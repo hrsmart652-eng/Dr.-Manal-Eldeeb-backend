@@ -93,22 +93,18 @@ Route::prefix('v1')->group(function () {
 //     |--------------------------------------------------------------------------
 //     */
     
-    Route::middleware('auth:api')->group(function () {
+//     Route::middleware('auth:api')->group(function () {
         
-        // Authentication (Protected)
-        Route::prefix('auth')->group(function () {
-            Route::post('logout', [AuthController::class, 'logout']);
-            Route::get('me', [AuthController::class, 'me']);
-            Route::put('profile', [AuthController::class, 'updateProfile']);
-            Route::post('avatar', [AuthController::class, 'uploadAvatar']);
-            Route::put('password', [AuthController::class, 'changePassword']);
-            Route::post('verify-email', [AuthController::class, 'verifyEmail']);
-            Route::post('resend-verification', [AuthController::class, 'resendVerification']);
-        });
-    });
-    
-
-        
+//         // Authentication (Protected)
+//         Route::prefix('auth')->group(function () {
+//             Route::post('logout', [AuthController::class, 'logout']);
+//             Route::get('me', [AuthController::class, 'me']);
+//             Route::put('profile', [AuthController::class, 'updateProfile']);
+//             Route::post('avatar', [AuthController::class, 'uploadAvatar']);
+//             Route::put('password', [AuthController::class, 'changePassword']);
+//             Route::post('verify-email', [AuthController::class, 'verifyEmail']);
+//             Route::post('resend-verification', [AuthController::class, 'resendVerification']);
+//         });
         
 //         /*
 //         |--------------------------------------------------------------------------
