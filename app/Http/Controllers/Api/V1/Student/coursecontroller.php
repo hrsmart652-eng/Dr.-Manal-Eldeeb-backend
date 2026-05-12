@@ -53,8 +53,10 @@ class CourseController extends Controller
     {
         $query = $request->user()
             ->enrollments()
-            ->with(['course.instructor.user', 'course.category'])
+            ->with(['course.instructor', 'course.category'])
             ->where('payment_status', 'completed');
+
+            // ->where('payment_status', 'completed')->where('status', 'active');when call active course only
 
         // Filter by status
         if ($request->has('status')) {
@@ -106,8 +108,16 @@ class CourseController extends Controller
      */
     public function enroll(Request $request, int $courseId): JsonResponse
     {
+  
         $user = $request->user();
         $course = Course::findOrFail($courseId);
+
+if ($course->price > 0) {
+    $request->validate([
+        'payment_method' => 'required|string|in:visa,card,wallet,paypal',
+    ]);
+}
+
 
         // Check if already enrolled
         if ($course->isEnrolledBy($user)) {
@@ -138,15 +148,18 @@ class CourseController extends Controller
 
             // For free courses or when payment is completed
             $paymentStatus = $course->price == 0 ? 'completed' : 'pending';
-
+           $paymentMethod = $course->price == 0 ? 'free' : $request->payment_method;
             // Create enrollment
             $enrollment = Enrollment::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
                 'price_paid' => $course->final_price,
-                'payment_method' => $request->payment_method ?? 'free',
+                'payment_method' => $paymentMethod,
+                // 'payment_method' => $request->payment_method ?? 'free',
                 'payment_status' => $paymentStatus,
-                'status' => $paymentStatus === 'completed' ? 'active' : 'pending',
+                // 'status' => $paymentStatus === 'completed' ? 'active' : 'pending',
+            //  'status' => $paymentStatus === 'completed' ? 'active' : 'cancelled',
+             'status' => 'active',
             ]);
 
             // If free course, increment enrollment count
@@ -164,15 +177,23 @@ class CourseController extends Controller
                 'data' => new EnrollmentResource($enrollment->load('course.instructor.user')),
             ], 201);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
             
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.',
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.',
+    //         ], 500);
+    //     }
+    // }
+    }catch (\Exception $e) {
+    DB::rollBack();
+
+    return response()->json([
+        'error' => $e->getMessage(),
+        'line' => $e->getLine(),
+    ], 500);
+}}
 
     /**
      * Get enrolled course details

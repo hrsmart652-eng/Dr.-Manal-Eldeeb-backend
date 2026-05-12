@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasTranslation;
 
 class BookPurchase extends Model
 {
-    use HasFactory;
+    use HasFactory,HasTranslation;
 
     protected $fillable = [
         'user_id',
@@ -116,19 +117,32 @@ class BookPurchase extends Model
         if (!$this->canDownload()) {
             return null;
         }
+ $token = encrypt([
+        'purchase_id' => $this->id,
+        'user_id'     => $this->user_id,
+        'book_id'     => $this->book_id,
+        'expires_at'  => now()->addMinutes(30)->toDateTimeString(),
+    ]);
 
-        $token = \Str::random(64);
-        $expiry = now()->addMinutes(30);
+    $link = url("api/v1/student/books/{$this->book_id}/download") . '?token=' . urlencode($token);
 
-        $this->update([
-            'download_link' => encrypt([
-                'token' => $token,
-                'expires_at' => $expiry,
-                'book_id' => $this->book_id,
-                'user_id' => $this->user_id,
-            ]),
-        ]);
+    $this->update(['download_link' => $link]);
 
-        return route('books.download', ['token' => $token]);
+    return $link;
     }
+    protected $appends = ['payment_status_text', 'shipping_status_text','title', 'description', 'final_price', 'has_active_discount', 'is_full'];
+    //     $token = \Str::random(64);
+    //     $expiry = now()->addMinutes(30);
+
+    //     $this->update([
+    //         'download_link' => encrypt([
+    //             'token' => $token,
+    //             'expires_at' => $expiry,
+    //             'book_id' => $this->book_id,
+    //             'user_id' => $this->user_id,
+    //         ]),
+    //     ]);
+
+    //     return route('books.download', ['token' => $token]);
+    // }
 }

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasTranslation;
 
 class CourseSection extends Model
 {
-    use HasFactory;
+    use HasFactory,HasTranslation;
 
     protected $fillable = [
         'course_id',
@@ -52,4 +53,5 @@ class CourseSection extends Model
     {
         return $this->lectures->count();
     }
+       protected $appends = ['title', 'description', 'final_price', 'has_active_discount', 'is_full'];
 }

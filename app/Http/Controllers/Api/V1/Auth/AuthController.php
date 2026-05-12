@@ -93,7 +93,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'تم تسجيل الدخول بنجاح',
+            'message' => __('api.login_success'),
             'data' => [
                 'user' => new UserResource($user->load('instructor')),
                 'access_token' => $token,

@@ -8,30 +8,35 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class InstructorResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * Transform the resource into an array for instructor listings.
      */
     public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
+            'name' => $this->user->name,
+            'full_name' => $this->full_name,
             'title' => $this->title,
-            'bio' => $this->bio_ar,
-            'bio_ar' => $this->bio_ar,
-            'bio_en' => $this->bio_en,
             'specialization' => $this->specialization_ar,
             'specialization_ar' => $this->specialization_ar,
             'specialization_en' => $this->specialization_en,
+            'bio_short' => \Str::limit($this->bio_ar, 150),
+            
+            'avatar' => $this->user->avatar 
+                ? asset('storage/' . $this->user->avatar) 
+                : null,
+            
             'experience_years' => $this->experience_years,
             'rating' => (float) $this->rating,
             'total_students' => $this->total_students,
             'total_courses' => $this->total_courses,
+            'total_books' => $this->total_books,
+            
             'is_featured' => $this->is_featured,
             'available_for_consultation' => $this->available_for_consultation,
-            'consultation_price' => $this->consultation_price ? (float) $this->consultation_price : null,
-            'social_links' => $this->social_links,
+            'consultation_price' => $this->consultation_price 
+                ? (float) $this->consultation_price 
+                : null,
         ];
     }
 }
-  

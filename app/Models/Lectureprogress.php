@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasTranslation;
 
 class LectureProgress extends Model
 {
-    use HasFactory;
+    use HasFactory,HasTranslation;
 
     protected $fillable = [
         'user_id',
@@ -97,4 +98,5 @@ class LectureProgress extends Model
 
         return min(100, round(($watchedSeconds / $this->total_duration_seconds) * 100));
     }
+       protected $appends = ['title', 'description', 'final_price', 'has_active_discount', 'is_full'];
 }

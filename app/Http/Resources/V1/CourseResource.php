@@ -23,7 +23,7 @@ class CourseResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description_ar,
             'description_short' => \Str::limit($this->description_ar, 150),
-            
+            'progress' => $this->pivot->progress_percentage ?? 0,
             // Media
             'thumbnail' => $this->thumbnail ? asset('storage/' . $this->thumbnail) : null,
             

@@ -31,47 +31,94 @@ class BookController extends Controller
      * @queryParam sort string Sort by (popular, newest, rating, price_low, price_high). Example: popular
      * @queryParam featured_first boolean Show featured books first. Example: true
      */
-    public function index(Request $request): JsonResponse
-    {
-        $query = Book::query()
-            ->with(['author.user', 'category'])
-            ->published()
-            ->inStock();
+public function index(Request $request): JsonResponse
+{
+    $query = Book::query()
+        ->with(['author.user', 'category'])
+        ->published()
+        ->inStock();
 
-        // Apply filters
-        $this->applyFilters($query, $request);
+    $this->applyFilters($query, $request);
+    $this->applySorting($query, $request);
 
-        // Apply sorting
-        $this->applySorting($query, $request);
+    if ($request->boolean('featured_first')) {
+        $query->orderBy('is_featured', 'desc');
+    }
 
-        // Featured first
-        if ($request->boolean('featured_first')) {
-            $query->orderBy('is_featured', 'desc');
-        }
+    $perPage = min($request->get('per_page', 12), 50);
+    $books = $query->paginate($perPage);
 
-        // Pagination
-        $perPage = min($request->get('per_page', 12), 50);
-        $books = $query->paginate($perPage);
+    // 👇 هـنا نضع الكود الجديد لجلب الكتب المشتراة لمرة واحدة فقط
+    $purchasedBookIds = [];
+    if (auth()->check()) {
+        $purchasedBookIds = auth()->user()->bookPurchases()
+            ->where('payment_status', 'completed')
+            ->pluck('book_id')
+            ->toArray();
+    }
+
+    // حالة العرض المقسم (المجموعات)
+    if ($request->boolean('grouped_by_category')) {
+        $groupedBooks = $books->getCollection()->groupBy(function($book) {
+            return $book->category->name ?? 'أخرى';
+        });
 
         return response()->json([
             'success' => true,
             'data' => [
-                'books' => BookResource::collection($books),
+                'sections' => $groupedBooks->map(function($items, $categoryName) use ($purchasedBookIds) {
+                    return [
+                        'category_name' => $categoryName,
+                        // نمرر الـ purchased_ids لكل كتاب داخل الـ Resource
+                        'books' => BookResource::collection($items)
+                    ];
+                })->values(),
+                'purchased_book_ids' => $purchasedBookIds, // نرسلها كـ meta data إضافية
                 'meta' => [
                     'current_page' => $books->currentPage(),
                     'last_page' => $books->lastPage(),
-                    'per_page' => $books->perPage(),
                     'total' => $books->total(),
-                ],
-                'links' => [
-                    'first' => $books->url(1),
-                    'last' => $books->url($books->lastPage()),
-                    'prev' => $books->previousPageUrl(),
-                    'next' => $books->nextPageUrl(),
                 ],
             ],
         ]);
     }
+
+    // حالة العرض العادي (Default)
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'books' => BookResource::collection($books),
+            'purchased_book_ids' => $purchasedBookIds, // نرسلها هنا أيضاً
+            'meta' => [
+                'current_page' => $books->currentPage(),
+                'last_page' => $books->lastPage(),
+                'total' => $books->total(),
+            ],
+        ],
+    ]);
+}
+
+
+
+        // return response()->json([
+        //     'success' => true,
+        //     'data' => [
+        //         'books' => BookResource::collection($books),
+        //         'meta' => [
+        //             'current_page' => $books->currentPage(),
+        //             'last_page' => $books->lastPage(),
+        //             'per_page' => $books->perPage(),
+        //             'total' => $books->total(),
+        //         ],
+        //         'links' => [
+        //             'first' => $books->url(1),
+        //             'last' => $books->url($books->lastPage()),
+        //             'prev' => $books->previousPageUrl(),
+        //             'next' => $books->nextPageUrl(),
+        //         ],
+        //     ],
+        // ]);
+ 
 
     /**
      * Get book details
@@ -215,6 +262,16 @@ class BookController extends Controller
         if ($request->has('author_id')) {
             $query->byAuthor($request->author_id);
         }
+
+//search by title of book
+    if ($request->filled('title')) {
+        $query->where('title', 'like', '%' . $request->title . '%');
+    }
+
+    // filter by category if category_id is provided
+    if ($request->filled('category_id')) {
+        $query->where('category_id', $request->category_id);
+    }
 
         if ($request->has('format')) {
             if ($request->format() === 'digital') {

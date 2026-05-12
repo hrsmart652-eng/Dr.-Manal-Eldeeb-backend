@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasTranslation;
 
 class Lecture extends Model
 {
-    use HasFactory;
+    use HasFactory,HasTranslation;
 
     protected $fillable = [
         'section_id',
@@ -97,4 +98,5 @@ class Lecture extends Model
         }
         return $this->available_at->isPast();
     }
+       protected $appends = ['title', 'description', 'final_price', 'has_active_discount', 'is_full'];
 }

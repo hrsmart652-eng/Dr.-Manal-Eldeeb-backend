@@ -30,6 +30,7 @@ class BookController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        
         $query = $request->user()
             ->bookPurchases()
             ->with(['book.author.user', 'book.category'])
@@ -37,7 +38,7 @@ class BookController extends Controller
 
         // Filter by format
         if ($request->has('format')) {
-            $query->where('format', $request->format());
+            $query->where('format', $request->input('format'));
         }
 
         $purchases = $query->latest()->paginate(12);
@@ -98,7 +99,7 @@ class BookController extends Controller
         }
 
         // Calculate price
-        $price = $this->calculatePrice($book, $request->format());
+        $price = $this->calculatePrice($book, $request->input('format'));
 
         try {
             DB::beginTransaction();
@@ -110,7 +111,7 @@ class BookController extends Controller
             $purchase = BookPurchase::create([
                 'user_id' => $user->id,
                 'book_id' => $book->id,
-                'format' => $request->format(),
+                'format' => $request->input('format'),
                 'price_paid' => $price,
                 'payment_method' => $request->payment_method ?? 'free',
                 'payment_status' => $paymentStatus,
@@ -123,12 +124,12 @@ class BookController extends Controller
                 $book->incrementSales();
                 
                 // Decrement stock for physical
-                if (in_array($request->format(), ['physical', 'both'])) {
+                if (in_array($request->input('format'), ['physical', 'both'])) {
                     $book->decrementStock();
                 }
 
                 // Generate download link for digital
-                if (in_array($request->format(), ['digital', 'both'])) {
+                if (in_array($request->input('format'), ['digital', 'both'])) {
                     $purchase->generateDownloadLink();
                 }
             }
@@ -143,14 +144,25 @@ class BookController extends Controller
                 'data' => new BookPurchaseResource($purchase->load('book.author.user')),
             ], 201);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+///////////////////
+            } catch (\Exception $e) {
+    DB::rollBack();
+    
+    return response()->json([
+        'success' => false,
+        'message' => $e->getMessage(),  // ← change this temporarily
+        'line' => $e->getLine(),
+        'file' => $e->getFile(),
+    ], 500);
+}
+        // } catch (\Exception $e) {
+        //     DB::rollBack();
             
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء الشراء. يرجى المحاولة مرة أخرى.',
-            ], 500);
-        }
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'حدث خطأ أثناء الشراء. يرجى المحاولة مرة أخرى.',
+        //     ], 500);
+        // }
     }
 
     /**
@@ -162,47 +174,95 @@ class BookController extends Controller
      * 
      * @urlParam bookId integer required Book ID. Example: 1
      */
-    public function download(Request $request, int $bookId): JsonResponse
-    {
-        $user = $request->user();
-        $book = Book::findOrFail($bookId);
 
-        // Check if purchased
-        $purchase = $book->purchases()
-            ->where('user_id', $user->id)
-            ->where('payment_status', 'completed')
-            ->first();
+    public function download(Request $request, int $bookId): mixed
+{
+    
+    $user = $request->user();
+    $book = Book::findOrFail($bookId);
+    
 
-        if (!$purchase) {
-            return response()->json([
-                'success' => false,
-                'message' => 'يجب شراء الكتاب أولاً',
-            ], 403);
-        }
+    // Check if purchased
+    $purchase = BookPurchase::where('user_id', $user->id)
+        ->where('book_id', $bookId)
+        ->where('payment_status', 'completed')
+        ->first();
 
-        // Check if can download
-        if (!$purchase->canDownload()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'لقد تجاوزت الحد الأقصى لعدد التنزيلات',
-            ], 403);
-        }
-
-        // Generate download link
-        $downloadUrl = $purchase->generateDownloadLink();
-        
-        // Increment download count
-        $purchase->incrementDownloads();
-
+    if (!$purchase) {
         return response()->json([
-            'success' => true,
-            'data' => [
-                'download_url' => $downloadUrl,
-                'expires_in_minutes' => 30,
-                'remaining_downloads' => $purchase->max_downloads - $purchase->download_count,
-            ],
-        ]);
+            'success' => false,
+            'message' => 'يجب شراء الكتاب أولاً',
+        ], 403);
     }
+
+    // Check download limit
+    if (!$purchase->canDownload()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'لقد تجاوزت الحد الأقصى لعدد التنزيلات',
+        ], 403);
+    }
+
+    // Check file exists
+    if (!$book->file_path || !Storage::exists($book->file_path)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الملف غير متاح حالياً',
+        ], 404);
+    }
+
+    // Increment download count
+    $purchase->incrementDownloads();
+\Log::info('Book file_path: ' . $book->file_path);
+\Log::info('File exists: ' . (Storage::exists($book->file_path) ? 'yes' : 'no'));
+    // Stream the actual file
+    return Storage::download(
+        $book->file_path,
+        $book->title_en . '.pdf',
+        ['Content-Type' => 'application/pdf']
+    );
+}
+    // public function download(Request $request, int $bookId): JsonResponse
+    // {
+    //     $user = $request->user();
+    //     $book = Book::findOrFail($bookId);
+
+    //     // Check if purchased
+    //     $purchase = $book->purchases()
+    //         ->where('user_id', $user->id)
+    //         ->where('payment_status', 'completed')
+    //         ->first();
+
+    //     if (!$purchase) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'يجب شراء الكتاب أولاً',
+    //         ], 403);
+    //     }
+
+    //     // Check if can download
+    //     if (!$purchase->canDownload()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'لقد تجاوزت الحد الأقصى لعدد التنزيلات',
+    //         ], 403);
+    //     }
+
+    //     // Generate download link
+    //     $downloadUrl = $purchase->generateDownloadLink();
+        
+    //     // Increment download count
+    //     $purchase->incrementDownloads();
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => [
+    //             'download_url' => $downloadUrl,
+    //             'expires_in_minutes' => 30,
+    //             'remaining_downloads' => $purchase->max_downloads - $purchase->download_count,
+    //         ],
+    //     ]);
+    // }
 
     /**
      * Get purchase details

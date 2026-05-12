@@ -182,6 +182,7 @@ class CourseController extends Controller
         return response()->json([
             'success' => true,
             'data' => new CourseDetailResource($course),
+            
         ]);
     }
 

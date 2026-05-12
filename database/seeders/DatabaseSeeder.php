@@ -20,6 +20,11 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             CourseSeeder::class,
             UserSeeder::class,
+            InstructorSeeder::class,      
+            AvailabilitySeeder::class,
+            BookSeeder::class,
+            ConsultationSeeder::class,
+            WorkshopRegistrationSeeder::class,
         ]);
         User::factory()->create([
             'name' => 'Test User',

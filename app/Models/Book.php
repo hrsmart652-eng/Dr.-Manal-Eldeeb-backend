@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use App\Traits\HasTranslation;
+
 
 class Book extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasTranslation;
 
     protected $fillable = [
         'title_ar',
@@ -236,6 +238,10 @@ class Book extends Model
             $this->decrement('stock_quantity', $quantity);
         }
     }
+    public function courses()
+{
+    return $this->belongsToMany(Course::class, 'course_book');
+}
 
     public function updateRating()
     {
@@ -252,15 +258,58 @@ class Book extends Model
         return $this->status === 'published' 
             && $this->in_stock;
     }
+    // App/Models/Book.php
+public function getPriceAttribute(): float
+{
+    return $this->digital_price ?? $this->physical_price ?? 0;
+}
 
-    protected static function boot()
+   
+    
+
+
+
+     protected static function boot()
     {
         parent::boot();
 
-        static::creating(function ($book) {
-            if (empty($book->slug)) {
-                $book->slug = \Str::slug($book->title_ar);
+        // Auto-generate slug on creating
+        static::creating(function ($course) {
+            if (empty($course->slug)) {
+                $course->slug = \Str::slug($course->title_ar,'-', null);
             }
         });
     }
+
+    /*
+    // |--------------------------------------------------------------------------
+    // | Localization Accessors (secound step after adding title_ar and title_en to fillable and database)
+    // |--------------------------------------------------------------------------
+    // */
+
+    // /**
+    //  * Get title based on current locale
+    //  */
+    // public function getTitleAttribute()
+    // {
+    //     $locale = app()->getLocale(); // return with 'ar' or 'en'
+    //     $column = "title_{$locale}";
+        
+    //     // إذا كانت القيمة موجودة باللغة المطلوبة ارجع بها، وإلا ارجع باللغة العربية كـ fallback
+    //     return $this->{$column} ?: $this->title_ar;
+    // }
+
+    // /**
+    //  * Bring description based on current locale
+    //  */
+    // public function getDescriptionAttribute()
+    // {
+    //     $locale = app()->getLocale();
+    //     $column = "description_{$locale}";
+        
+    //     return $this->{$column} ?: $this->description_ar;
+    // }
+
+    // أضيفي هذين الحقلين لمصفوفة الـ appends في بداية الكلاس لضمان ظهورهما في الـ API
+    protected $appends = ['title', 'description', 'final_price', 'has_active_discount', 'is_full'];
 }

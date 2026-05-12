@@ -2,138 +2,99 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Enrollment extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
+
+    protected $table = 'enrollments';
 
     protected $fillable = [
         'user_id',
         'course_id',
-        'price_paid',
-        'payment_method',
-        'transaction_id',
-        'payment_status',
         'status',
         'progress_percentage',
         'completed_lectures',
+        'payment_status',
+        'price_paid',
+        'payment_method',
+        'transaction_id',
+        'enrolled_at',
         'last_accessed_at',
         'completed_at',
         'expires_at',
     ];
 
     protected $casts = [
-        'price_paid' => 'decimal:2',
         'progress_percentage' => 'integer',
         'completed_lectures' => 'integer',
+        'price_paid' => 'decimal:2',
+        'enrolled_at' => 'datetime',
         'last_accessed_at' => 'datetime',
         'completed_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
 
     /**
-     * Enrollment belongs to a user
+     * Get the student
      */
-    public function user()
+    public function student(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'student_id');
     }
 
     /**
-     * Enrollment belongs to a course
+     * Get the course
      */
-    public function course()
+    public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
     /**
-     * Enrollment has many lecture progress
-     */
-    public function lectureProgress()
-    {
-        return $this->hasMany(LectureProgress::class);
-    }
-
-    /**
-     * Get payment status in Arabic
-     */
-    public function getPaymentStatusTextAttribute()
-    {
-        return match($this->payment_status) {
-            'pending' => 'قيد الانتظار',
-            'completed' => 'مكتمل',
-            'failed' => 'فشل',
-            'refunded' => 'مسترد',
-            default => $this->payment_status,
-        };
-    }
-
-    /**
-     * Get enrollment status in Arabic
-     */
-    public function getStatusTextAttribute()
-    {
-        return match($this->status) {
-            'active' => 'نشط',
-            'completed' => 'مكتمل',
-            'expired' => 'منتهي',
-            'cancelled' => 'ملغي',
-            default => $this->status,
-        };
-    }
-
-    /**
      * Check if enrollment is active
      */
-    public function isActive()
+    public function isActive(): bool
     {
-        return $this->status === 'active' 
-            && $this->payment_status === 'completed'
-            && (!$this->expires_at || $this->expires_at->isFuture());
+        return $this->status === 'active';
     }
 
     /**
      * Check if enrollment is completed
      */
-    public function isCompleted()
+    public function isCompleted(): bool
     {
-        return $this->status === 'completed' || $this->progress_percentage >= 100;
+        return $this->status === 'completed';
     }
 
     /**
-     * Update progress
+     * Get status text in Arabic
      */
-    public function updateProgress()
+    public function getStatusTextAttribute(): string
     {
-        $course = $this->course;
-        $totalLectures = $course->total_lectures;
-        
-        if ($totalLectures === 0) {
-            return;
-        }
-
-        $completedLectures = $this->lectureProgress()
-            ->where('is_completed', true)
-            ->count();
-
-        $progressPercentage = round(($completedLectures / $totalLectures) * 100);
-
-        $this->update([
-            'completed_lectures' => $completedLectures,
-            'progress_percentage' => $progressPercentage,
-            'status' => $progressPercentage >= 100 ? 'completed' : 'active',
-            'completed_at' => $progressPercentage >= 100 ? now() : null,
-        ]);
+        return match($this->status) {
+            'active' => 'نشط',
+            'completed' => 'مكتمل',
+            'expired' => 'انتهت الصلاحية',
+            'cancelled' => 'ملغى',
+            default => $this->status,
+        };
     }
 
     /**
-     * Touch last accessed
+     * Get payment status text in Arabic
      */
-    public function touchLastAccessed()
+    public function getPaymentStatusTextAttribute(): string
     {
-        $this->update(['last_accessed_at' => now()]);
+        return match($this->payment_status) {
+            'completed' => 'مكتمل',
+            'pending' => 'قيد الانتظار',
+            'failed' => 'فشل',
+            'refunded' => 'مسترجع',
+            default => $this->payment_status,
+        };
     }
 }

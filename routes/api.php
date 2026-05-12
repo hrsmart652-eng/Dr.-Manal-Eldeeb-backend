@@ -1,11 +1,16 @@
 <?php
 
-
-
-
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\CourseController;
+use App\Http\Controllers\Api\V1\InstructorController;
+use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\StatisticsController;
+use App\Http\Controllers\Api\V1\Student\BookingController as StudentBookingController;
+use App\Http\Controllers\Api\V1\Student\PaymentController;
+use App\Http\Controllers\Api\V1\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,6 +27,10 @@ Route::prefix('v1')->group(function () {
     | Public Routes (No Authentication Required)
     |--------------------------------------------------------------------------
     */
+
+
+
+     
     
     // Authentication Routes
     Route::prefix('auth')->group(function () {
@@ -37,6 +46,10 @@ Route::prefix('v1')->group(function () {
         // Social Login (Optional - implement later)
         // Route::post('social/{provider}', [SocialAuthController::class, 'login']);
     });
+
+
+
+    
     
     // Public Course Browsing
     Route::prefix('courses')->group(function () {
@@ -47,35 +60,39 @@ Route::prefix('v1')->group(function () {
     });
     
     // Public Books Browsing
-//     Route::prefix('books')->group(function () {
-//         Route::get('/', [\App\Http\Controllers\Api\V1\BookController::class, 'index']);
-//         Route::get('/{slug}', [\App\Http\Controllers\Api\V1\BookController::class, 'show']);
-//         Route::get('/{slug}/reviews', [\App\Http\Controllers\Api\V1\BookController::class, 'reviews']);
-//         Route::get('/{slug}/preview', [\App\Http\Controllers\Api\V1\BookController::class, 'preview']);
-//     });
+    Route::prefix('books')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\BookController::class, 'index']);
+        Route::get('/{slug}', [\App\Http\Controllers\Api\V1\BookController::class, 'show']);
+        Route::get('/{slug}/reviews', [\App\Http\Controllers\Api\V1\BookController::class, 'reviews']);
+        Route::get('/{slug}/preview', [\App\Http\Controllers\Api\V1\BookController::class, 'preview']);
+    });
     
 //     // Public Workshops
-//     Route::prefix('workshops')->group(function () {
-//         Route::get('/', [\App\Http\Controllers\Api\V1\WorkshopController::class, 'index']);
-//         Route::get('/{id}', [\App\Http\Controllers\Api\V1\WorkshopController::class, 'show']);
-//     });
+    Route::prefix('workshops')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\WorkshopController::class, 'index']);
+        Route::get('/upcoming', [\App\Http\Controllers\Api\V1\WorkshopController::class, 'upcoming']);
+        Route::get('/featured', [\App\Http\Controllers\Api\V1\WorkshopController::class, 'featured']);
+        Route::get('/{slug}', [\App\Http\Controllers\Api\V1\WorkshopController::class, 'show'])->name('workshops.show');
+        Route::get('/{slug}/related', [\App\Http\Controllers\Api\V1\WorkshopController::class, 'related']);
+    });
+
     
-//     // Instructors (Public)
-//     Route::prefix('instructors')->group(function () {
-//         Route::get('/', [\App\Http\Controllers\Api\V1\InstructorController::class, 'index']);
-//         Route::get('/{id}', [\App\Http\Controllers\Api\V1\InstructorController::class, 'show']);
-//         Route::get('/{id}/courses', [\App\Http\Controllers\Api\V1\InstructorController::class, 'courses']);
-//         Route::get('/{id}/books', [\App\Http\Controllers\Api\V1\InstructorController::class, 'books']);
-//         Route::get('/{id}/availability', [\App\Http\Controllers\Api\V1\InstructorController::class, 'availability']);
-//     });
+    // Instructors (Public)
+    Route::prefix('instructors')->group(function () {
+        Route::get('/', [InstructorController::class, 'index']);
+        Route::get('/{id}', [InstructorController::class, 'show']);
+        Route::get('/{id}/courses', [InstructorController::class, 'courses']);
+        Route::get('/{id}/books', [InstructorController::class, 'books']);
+        Route::get('/{id}/availability', [InstructorController::class, 'availability']);
+    });
     
-//     // Categories (Public)
-//     Route::prefix('categories')->group(function () {
-//         Route::get('/', [\App\Http\Controllers\Api\V1\CategoryController::class, 'index']);
-//         Route::get('/{slug}', [\App\Http\Controllers\Api\V1\CategoryController::class, 'show']);
-//         Route::get('/{slug}/courses', [\App\Http\Controllers\Api\V1\CategoryController::class, 'courses']);
-//         Route::get('/{slug}/books', [\App\Http\Controllers\Api\V1\CategoryController::class, 'books']);
-//     });
+    // Categories (Public)
+    // Route::prefix('categories')->group(function () {
+    //     Route::get('/', [\App\Http\Controllers\Api\V1\CategoryController::class, 'index']);
+    //     Route::get('/{slug}', [\App\Http\Controllers\Api\V1\CategoryController::class, 'show']);
+    //     Route::get('/{slug}/courses', [\App\Http\Controllers\Api\V1\CategoryController::class, 'courses']);
+    //     Route::get('/{slug}/books', [\App\Http\Controllers\Api\V1\CategoryController::class, 'books']);
+    // });
     
 //     // Public Statistics
 //     Route::get('statistics', [\App\Http\Controllers\Api\V1\StatisticsController::class, 'index']);
@@ -105,6 +122,36 @@ Route::prefix('v1')->group(function () {
             Route::post('verify-email', [AuthController::class, 'verifyEmail']);
             Route::post('resend-verification', [AuthController::class, 'resendVerification']);
         });
+
+
+        // CATEGORIES 
+    Route::prefix('categories')->group(function () {
+        Route::get('/', [CategoryController::class, 'index']);
+        Route::get('/tree', [CategoryController::class, 'tree']);
+        Route::get('/{slug}', [CategoryController::class, 'show']);
+        Route::get('/{slug}/items', [CategoryController::class, 'items']);
+    });
+
+    // SEARCH 
+    Route::prefix('search')->group(function () {
+        Route::get('/', [SearchController::class, 'search']);
+        Route::get('/suggestions', [SearchController::class, 'suggestions']);
+        Route::get('/popular', [SearchController::class, 'popular']);
+    });
+
+    // CONTACT 
+    Route::prefix('contact')->group(function () {
+        Route::post('/', [ContactController::class, 'submit']);
+        Route::get('/info', [ContactController::class, 'info']);
+    });
+
+    // STATISTICS  
+    Route::prefix('statistics')->group(function () {
+        Route::get('/', [StatisticsController::class, 'index']);
+        Route::get('/popular-courses', [StatisticsController::class, 'popularCourses']);
+        Route::get('/top-instructors', [StatisticsController::class, 'topInstructors']);
+        Route::get('/recent-enrollments', [StatisticsController::class, 'recentEnrollments']);
+    });
     });
         
 //         /*
@@ -114,59 +161,83 @@ Route::prefix('v1')->group(function () {
 //         |--------------------------------------------------------------------------
 //         */
         
-//         Route::prefix('student')->middleware('scope:student,admin')->group(function () {
+        Route::prefix('student')->middleware('auth:api')->group(function () {
             
-//             // Dashboard
-//             Route::get('dashboard', [\App\Http\Controllers\Api\V1\Student\DashboardController::class, 'index']);
+          //  Dashboard
+            Route::get('dashboard', [\App\Http\Controllers\Api\V1\Student\DashboardController::class, 'index']);
             
-//             // Profile Management
-//             Route::prefix('profile')->group(function () {
-//                 Route::get('/', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'show']);
-//                 Route::put('/', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'update']);
-//                 Route::post('avatar', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'uploadAvatar']);
-//                 Route::delete('avatar', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'deleteAvatar']);
-//             });
+            // Profile Management
+            Route::prefix('profile')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'show']);
+                Route::put('/', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'update']);
+                Route::post('avatar', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'uploadAvatar']);
+                Route::delete('avatar', [\App\Http\Controllers\Api\V1\Student\ProfileController::class, 'deleteAvatar']);
+            });
+       
             
-//             // My Courses
-//             Route::prefix('courses')->group(function () {
-//                 Route::get('/', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'index']);
-//                 Route::get('/{courseId}', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'show']);
-//                 Route::post('/{courseId}/enroll', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'enroll']);
-//                 Route::get('/{courseId}/progress', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'progress']);
-//                 Route::put('/{courseId}/lectures/{lectureId}/complete', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'markLectureComplete']);
+            // My Courses
+            Route::prefix('courses')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'index']);
+                Route::get('/{courseId}', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'show']);
+                Route::post('/{courseId}/enroll', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'enroll']);
+                Route::get('/{courseId}/progress', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'progress']);
+                Route::put('/{courseId}/lectures/{lectureId}/complete', [\App\Http\Controllers\Api\V1\Student\CourseController::class, 'markLectureComplete']);
                 
-//                 // Reviews
-//                 Route::post('/{courseId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'storeCourseReview']);
-//                 Route::put('/{courseId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'updateCourseReview']);
-//                 Route::delete('/{courseId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'deleteCourseReview']);
-//             });
+                // Reviews
+                Route::post('/{courseId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'storeCourseReview']);
+                Route::put('/{courseId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'updateCourseReview']);
+                Route::delete('/{courseId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'deleteCourseReview']);
+            });
             
-//             // My Books
-//             Route::prefix('books')->group(function () {
-//                 Route::get('/', [\App\Http\Controllers\Api\V1\Student\BookController::class, 'index']);
-//                 Route::post('/{bookId}/purchase', [\App\Http\Controllers\Api\V1\Student\BookController::class, 'purchase']);
-//                 Route::get('/{bookId}/download', [\App\Http\Controllers\Api\V1\Student\BookController::class, 'download']);
+            // My Books
+            Route::prefix('books')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\V1\Student\BookController::class, 'index']);
+                Route::get('/{bookId}', [\App\Http\Controllers\Api\V1\Student\BookController::class, 'show']);
+                Route::post('/{bookId}/purchase', [\App\Http\Controllers\Api\V1\Student\BookController::class, 'purchase']);
                 
-//                 // Reviews
-//                 Route::post('/{bookId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'storeBookReview']);
-//                 Route::put('/{bookId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'updateBookReview']);
-//                 Route::delete('/{bookId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'deleteBookReview']);
-//             });
+                Route::get('/{bookId}/download', [\App\Http\Controllers\Api\V1\Student\BookController::class, 'download']);
+                
+                // Reviews
+                Route::post('/{bookId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'storeBookReview']);
+                Route::put('/{bookId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'updateBookReview']);
+                Route::delete('/{bookId}/review', [\App\Http\Controllers\Api\V1\Student\ReviewController::class, 'deleteBookReview']);
+            });
             
 //             // Workshops
-//             Route::prefix('workshops')->group(function () {
-//                 Route::get('/', [\App\Http\Controllers\Api\V1\Student\WorkshopController::class, 'index']);
-//                 Route::post('/{workshopId}/enroll', [\App\Http\Controllers\Api\V1\Student\WorkshopController::class, 'enroll']);
-//             });
+               Route::prefix('workshops')->group(function () {
+              Route::get('/', [\App\Http\Controllers\Api\V1\Student\WorkshopController::class, 'index']);
+              Route::post('/{workshopId}/register', [\App\Http\Controllers\Api\V1\student\WorkshopController::class, 'register']);
+              Route::get('/upcoming', [\App\Http\Controllers\Api\V1\Student\WorkshopController::class, 'upcoming']);
+              Route::get('/completed', [\App\Http\Controllers\Api\V1\student\WorkshopController::class, 'completed']);
+              Route::get('/{id}', [\App\Http\Controllers\Api\V1\Student\WorkshopController::class, 'show']);
+              Route::put('/{id}/cancel', [\App\Http\Controllers\Api\V1\Student\WorkshopController::class, 'cancel']);
+              Route::get('/{id}/certificate', [\App\Http\Controllers\Api\V1\Student\WorkshopController::class, 'downloadCertificate'])->name('certificates.download');
+    });
+
+                // Consultations (NEW)
+                Route::apiResource('consultations', \App\Http\Controllers\Api\V1\Student\ConsultationController::class);
             
 //             // Bookings/Consultations
-//             Route::prefix('bookings')->group(function () {
-//                 Route::get('/', [\App\Http\Controllers\Api\V1\Student\BookingController::class, 'index']);
-//                 Route::post('/check-availability', [\App\Http\Controllers\Api\V1\Student\BookingController::class, 'checkAvailability']);
-//                 Route::post('/', [\App\Http\Controllers\Api\V1\Student\BookingController::class, 'create']);
-//                 Route::get('/{id}', [\App\Http\Controllers\Api\V1\Student\BookingController::class, 'show']);
-//                 Route::put('/{id}/cancel', [\App\Http\Controllers\Api\V1\Student\BookingController::class, 'cancel']);
-//             });
+            Route::prefix('bookings')->group(function () {
+                Route::get('/', [StudentBookingController::class, 'index']);
+                Route::post('/check-availability', [StudentBookingController::class, 'checkAvailability']);
+                Route::post('/', [StudentBookingController::class, 'create']);
+                Route::get('/{id}', [StudentBookingController::class, 'show']);
+                Route::put('/{id}/cancel', [StudentBookingController::class, 'cancel']);
+            });
+
+
+            
+        Route::prefix('payments')->group(function () {
+             Route::post('/book/{bookId}', [PaymentController::class, 'createBookPayment']);
+           Route::post('/booking/{bookingId}', [PaymentController::class, 'createBookingPayment']);
+            Route::post('/course/{enrollmentId}', [PaymentController::class, 'createCoursePayment']);
+            Route::post('/paypal/execute', [PaymentController::class, 'executePayPalPayment']);
+
+            Route::post('workshops/{registrationId}/payment', [PaymentController::class, 'createWorkshopPayment']);
+            Route::get('/', [PaymentController::class, 'index']);
+            Route::get('/{id}', [PaymentController::class, 'show']);
+            // Route::get('/details/{id}', [PaymentController::class, 'show']);
             
 //             // Certificates
 //             Route::prefix('certificates')->group(function () {
@@ -198,8 +269,13 @@ Route::prefix('v1')->group(function () {
 //         |--------------------------------------------------------------------------
 //         */
         
-//         Route::prefix('instructor')->middleware('scope:instructor,admin')->group(function () {
-            
+        Route::prefix('instructor')->middleware('scope:instructor,admin')->group(function () {
+                     Route::get('/', [InstructorController::class, 'index']);
+                     Route::get('/{id}', [InstructorController::class, 'show']);
+                     Route::get('/{id}/courses', [InstructorController::class, 'courses']);
+                    Route::get('/{id}/books', [InstructorController::class, 'books']);
+                     Route::get('/{id}/availability', [InstructorController::class, 'availability']);
+});
 //             // Dashboard
 //             Route::get('dashboard', [\App\Http\Controllers\Api\V1\Instructor\DashboardController::class, 'index']);
             
@@ -314,24 +390,40 @@ Route::prefix('v1')->group(function () {
 //         | Payment Routes
 //         |--------------------------------------------------------------------------
 //         */
+
+
+// Student Payment Routes
+  
+
+
+
+    // book payment routes:
+
+    
+        //   Route::post('/paypal/execute', [PaymentController::class, 'executePayPalPayment']);
+        //   Route::get('/{id}', [PaymentController::class, 'show']);
+          
+        });
+  
         
-//         Route::prefix('payments')->group(function () {
-//             // Initiate payment
-//             Route::post('/checkout', [\App\Http\Controllers\Api\V1\PaymentController::class, 'checkout']);
-//             Route::post('/verify', [\App\Http\Controllers\Api\V1\PaymentController::class, 'verify']);
+    //     Route::prefix('payments')->group(function () {
+    //         // Initiate payment
+    //         Route::post('/checkout', [\App\Http\Controllers\Api\V1\PaymentController::class, 'checkout']);
+    //         Route::post('/verify', [\App\Http\Controllers\Api\V1\PaymentController::class, 'verify']);
             
-//             // Payment methods
-//             Route::get('/methods', [\App\Http\Controllers\Api\V1\PaymentController::class, 'methods']);
-//         });
-//     });
+    //         // Payment methods
+    //         Route::get('/methods', [\App\Http\Controllers\Api\V1\PaymentController::class, 'methods']);
+    //     });
+    });
     
-//     /*
-//     |--------------------------------------------------------------------------
-//     | Payment Webhooks (No Authentication)
-//     | These are called by payment gateways
-//     |--------------------------------------------------------------------------
-//     */
-    
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Webhooks (No Authentication)
+    | These are called by payment gateways
+    |--------------------------------------------------------------------------
+    */
+      Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripeWebhook']);
+});
 //     Route::prefix('webhooks')->group(function () {
 //         Route::post('/paypal', [\App\Http\Controllers\Api\V1\Webhook\PayPalWebhookController::class, 'handle']);
 //         Route::post('/stripe', [\App\Http\Controllers\Api\V1\Webhook\StripeWebhookController::class, 'handle']);
@@ -351,4 +443,7 @@ Route::fallback(function () {
     ], 404);
 });
 
-});
+
+
+    
+

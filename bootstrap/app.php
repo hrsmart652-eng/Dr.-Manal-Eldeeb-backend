@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Laravel\Passport\Http\Middleware\CheckForAnyScope;
+use Laravel\Passport\Http\Middleware\CheckScopes;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,9 +13,21 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
-    })
+   
+    ->withMiddleware(function (Middleware $middleware) {
+    // $middleware->alias([
+        // 'scopes' => CheckScopes::class,
+        // 'scope'  => CheckForAnyScope::class,
+    // ]);
+    $middleware->web(append: [
+        \App\Http\Middleware\SetLocale::class,
+    ]);
+    //for api routes
+    $middleware->api(append: [
+        \App\Http\Middleware\SetLocale::class,
+    ]);
+})
+
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
